@@ -319,7 +319,7 @@ const ROLE_HEX   = {'인사':'#ED6C00','총무':'#F8B616','팀장':'#727171'};
 const ROLE_BADGE = {'인사':'rb-hr','총무':'rb-ga','팀장':'rb-lead'};
 const fmt1 = n => (Math.round(n*10)/10).toLocaleString('ko-KR',{minimumFractionDigits:0,maximumFractionDigits:1});
 const pct  = n => (Math.round(n*1000)/10).toFixed(1)+'%';
-const esc  = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc  = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sum  = (arr, f) => arr.reduce((a,r)=>a+f(r),0);
 
 let MEMBERS, MEMBER_ROLE, ROLES, minD, maxD;
@@ -707,9 +707,12 @@ upInput.addEventListener('change', async e=>{
   const files=[...e.target.files]; if(!files.length) return;
   upStatus.textContent='파일을 읽는 중...';
   try{
+    /* 보안 보강: 조작된 파일을 통한 프로토타입 오염 공격 차단 */
+    Object.freeze(Object.prototype);
     let combined = DATA_IS_DEMO ? [] : DATA.slice();
     const fileReports=[];
     for(const file of files){
+      if(file.size > 20*1024*1024){ fileReports.push(file.name+': 20MB 초과로 제외'); continue; }
       const buf=await file.arrayBuffer();
       const wb=XLSX.read(buf,{type:'array',cellDates:true});
       const res=parseWorkbook(wb);
